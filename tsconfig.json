@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "esnext", // 最新 JavaScript 特性支持
+    "module": "esnext", // 使用 ES Module
+    "moduleResolution": "bundler", // Node 模塊解析
+    "baseUrl": ".", // 設定基礎路徑
+    "paths": {
+      "@/*": ["./src/*"] // 路徑別名，對應 Vite 的 `resolve.alias`
+    },
+    "strict": true, // 啟用 TypeScript 嚴格模式
+    "esModuleInterop": true, // 支持 CommonJS 和 ES Module 互操作
+    "skipLibCheck": true, // 跳過類型庫檢查以加快構建速度
+    "useDefineForClassFields": true, // 支持 Vue 組件中的 class fields
+    "types": ["vite/client"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"]
+  },
+  "include": ["**/**.ts", "**/**.d.ts", "**/**.vue"],
+  "exclude": ["node_modules", "dist"] // 排除不需要檢查的文件和目錄
+}
