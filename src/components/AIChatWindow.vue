@@ -23,7 +23,7 @@ const emit = defineEmits<{
 
 const t = computed(() => I18N[props.currentLang]);
 const chatMessages: Ref<Message[]> = ref<Message[]>([
-  { role: 'assistant', content: 'Hello! I am your AI assistant. How can I help you with your Markdown today?' }
+  { role: 'assistant', content: t.value.initialGreeting }
 ]);
 const chatInput = ref('');
 const isSending = ref(false);
@@ -215,9 +215,9 @@ const sendMessage = async () => {
             if (newContent !== props.markdownContent) {
               emit('update:markdownContent', newContent);
               emit('update:diffHighlights', ranges);
-              resultMsg = 'Successfully applied edit.';
+              resultMsg = t.value.successEdit;
             } else {
-              resultMsg = 'Failed to apply edit. Search block not found.';
+              resultMsg = t.value.failEdit;
             }
 
             chatMessages.value.push({
@@ -253,14 +253,14 @@ const sendMessage = async () => {
       }
 
     } else {
-      const reply = message.content ?? 'No response';
+      const reply = message.content ?? t.value.noResponse;
       chatMessages.value.push({ role: 'assistant', content: reply });
       await scrollToBottom();
     }
 
   } catch (error) {
     console.error(error);
-    chatMessages.value.push({ role: 'assistant', content: `Error: ${error.message}` });
+    chatMessages.value.push({ role: 'assistant', content: `${t.value.errorPrefix}${error.message}` });
     await scrollToBottom();
   } finally {
     isSending.value = false;
@@ -362,7 +362,7 @@ onUnmounted(() => {
           >
             <div class="font-bold text-green-500 flex items-center gap-1">
               <span class="material-icons text-[10px]">swap_horiz</span>
-              result
+              {{ t.result }}
             </div>
             <div class="font-mono text-gray-400 whitespace-pre-wrap break-all bg-gray-900/50 p-1 rounded">
               {{ msg.content }}
@@ -395,13 +395,13 @@ onUnmounted(() => {
             </div>
           </template>
         </div>
-        <span class="text-[10px] text-gray-500 mt-1">{{ msg.role === 'user' ? 'You' : 'AI' }}</span>
+        <span class="text-[10px] text-gray-500 mt-1">{{ msg.role === 'user' ? t.you : t.ai }}</span>
       </div>
       <div
         v-if="isSending"
         class="self-start text-gray-500 text-xs animate-pulse"
       >
-        Thinking...
+        {{ t.thinking }}
       </div>
     </div>
 

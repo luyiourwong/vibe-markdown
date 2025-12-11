@@ -63,7 +63,7 @@ const t = computed(() => I18N[props.currentLang]);
       </button>
       <button
         class="p-2 hover:bg-gray-700 rounded-full transition-colors"
-        title="Switch Language"
+        :title="t.switchLanguage"
         @click="emit('toggleLanguage')"
       >
         <span class="material-icons text-sm">{{ currentLang === 'en' ? 'language' : 'translate' }}</span>
