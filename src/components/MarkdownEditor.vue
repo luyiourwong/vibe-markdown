@@ -62,7 +62,6 @@ const escapeHtml = (text: string) => {
 const backdropHtml = computed(() => {
   if (!markdownContent.value) return '';
   const lines = markdownContent.value.split('\n');
-  const diffs = diffHighlights ?? [];
   const sel = selectionRange.value;
 
   let currentPos = 0;
@@ -75,8 +74,8 @@ const backdropHtml = computed(() => {
     const end = start + len + (isLast ? 0 : 1);
 
     let isDiff = false;
-    if (diffs.length > 0) {
-      isDiff = diffs.some(h => {
+    if (diffHighlights.length > 0) {
+      isDiff = diffHighlights.some(h => {
         if (h.start === h.end) {
           if (isLast) return h.start >= start && h.start <= end;
           return h.start >= start && h.start < end;
