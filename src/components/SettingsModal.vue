@@ -28,7 +28,7 @@ const save = () => {
 <template>
   <div
     v-if="show"
-    class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm"
+    class="fixed inset-0 bg-black/50 flex items-center justify-center z-60 backdrop-blur-sm"
   >
     <div class="bg-gray-800 border border-gray-700 rounded-xl w-96 shadow-2xl p-6">
       <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
@@ -61,6 +61,17 @@ const save = () => {
             class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white focus:border-purple-500 outline-none"
           >
         </div>
+      </div>
+
+      <div class="mt-6 space-y-3 text-xs text-gray-400 bg-gray-900/50 p-3 rounded border border-gray-700/50">
+        <p class="flex gap-2 items-start">
+          <span class="material-icons text-sm text-blue-400 mt-0.5">info</span>
+          <span class="leading-relaxed">{{ t.localDataInfo }}</span>
+        </p>
+        <p class="flex gap-2 items-start">
+          <span class="material-icons text-sm text-yellow-500 mt-0.5">warning</span>
+          <span class="leading-relaxed">{{ t.securityWarning }}</span>
+        </p>
       </div>
 
       <div class="flex justify-end gap-2 mt-6">

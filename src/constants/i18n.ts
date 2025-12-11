@@ -30,6 +30,8 @@ export const I18N = {
     failEdit: 'Failed to apply edit. Search block not found.',
     noResponse: 'No response',
     errorPrefix: 'Error: ',
+    localDataInfo: 'Your data is stored locally in your browser and is never uploaded to any server or third-party data collectors.',
+    securityWarning: 'Security Warning: Do not save your API Key on public computers. Please be aware that browser extensions may have access to local storage.',
   },
   zh: {
     title: 'VibeMarkdown',
@@ -62,5 +64,7 @@ export const I18N = {
     failEdit: '應用編輯失敗。找不到搜尋區塊。',
     noResponse: '無回應',
     errorPrefix: '錯誤：',
+    localDataInfo: '您的資料僅儲存於瀏覽器端，不會上傳至任何伺服器或第三方數據收集平台。',
+    securityWarning: '安全提醒：請勿在公用電腦上儲存 API Key。請注意，瀏覽器擴充功能可能有權限讀取您的本地儲存資料。',
   },
 };
