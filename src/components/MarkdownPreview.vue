@@ -4,14 +4,14 @@ import MarkdownIt from 'markdown-it';
 import type { Lang } from '@/types';
 import { I18N } from '@/constants/i18n';
 
-const props = defineProps<{
+const { content, currentLang } = defineProps<{
   content: string;
   currentLang: Lang;
 }>();
 
-const t = computed(() => I18N[props.currentLang]);
+const t = computed(() => I18N[currentLang]);
 const md = new MarkdownIt();
-const renderedMarkdown = computed(() => md.render(props.content));
+const renderedMarkdown = computed(() => md.render(content));
 </script>
 
 <template>

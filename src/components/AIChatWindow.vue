@@ -5,23 +5,20 @@ import DiffMatchPatch from 'diff-match-patch';
 import type { Message, Settings, Lang, HighlightRange } from '@/types';
 import { I18N } from '@/constants/i18n';
 
-const props = defineProps<{
-  show: boolean;
+const show = defineModel<boolean>('show');
+const selectedText = defineModel<string>('selectedText');
+const markdownContent = defineModel<string>('markdownContent');
+const diffHighlights = defineModel<HighlightRange[]>('diffHighlights');
+const { currentLang, settings } = defineProps<{
   currentLang: Lang;
   settings: Settings;
-  selectedText: string;
-  markdownContent: string;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:show', value: boolean): void;
-  (e: 'update:selectedText', value: string): void;
-  (e: 'update:markdownContent', value: string): void;
-  (e: 'update:diffHighlights', value: HighlightRange[]): void;
-  (e: 'openSettings'): void;
+  openSettings: []
 }>();
 
-const t = computed(() => I18N[props.currentLang]);
+const t = computed(() => I18N[currentLang]);
 const chatMessages: Ref<Message[]> = ref<Message[]>([
   { role: 'assistant', content: t.value.initialGreeting }
 ]);
@@ -33,42 +30,42 @@ const dragOffset = ref({ x: 0, y: 0 });
 const chatMessagesRef = ref<HTMLDivElement | null>(null);
 
 const truncatedSelection = computed(() => {
-  if (!props.selectedText) return '';
-  return props.selectedText.length > 50 
-    ? props.selectedText.substring(0, 50) + '...' 
-    : props.selectedText;
+  if (!selectedText.value) return '';
+  return selectedText.value.length > 50
+    ? selectedText.value.substring(0, 50) + '...'
+    : selectedText.value;
 });
 
 const clearChat = () => {
   chatMessages.value = [];
 };
 
-const applyDiff = (original: string, diff: string): { content: string; ranges: HighlightRange[] } => {
+const applyDiff = (original: string | undefined, diff: string): { content: string; ranges: HighlightRange[] } => {
   const dmp = new DiffMatchPatch();
   // Increase Match_Distance to allow finding matches anywhere in the file
   // Default is 1000, which causes failures for content further down in the file
   dmp.Match_Distance = 100000;
   dmp.Match_Threshold = 0.5;
-  
-  let newContent = original;
+
+  let newContent = original ?? '';
   const ranges: HighlightRange[] = [];
   const lines = diff.split('\n');
   const blocks: { search: string; replace: string }[] = [];
-  
+
   let i = 0;
   while (i < lines.length) {
     if (lines[i].includes('<<<<<<< SEARCH')) {
       const start = i;
       let middle = -1;
       let end = -1;
-      
+
       for (let j = start + 1; j < lines.length; j++) {
         if (lines[j].includes('=======')) {
           middle = j;
           break;
         }
       }
-      
+
       if (middle !== -1) {
         for (let k = middle + 1; k < lines.length; k++) {
           if (lines[k].includes('>>>>>>> REPLACE')) {
@@ -77,7 +74,7 @@ const applyDiff = (original: string, diff: string): { content: string; ranges: H
           }
         }
       }
-      
+
       if (middle !== -1 && end !== -1) {
         const search = lines.slice(start + 1, middle).join('\n');
         const replace = lines.slice(middle + 1, end).join('\n');
@@ -88,25 +85,27 @@ const applyDiff = (original: string, diff: string): { content: string; ranges: H
     }
     i++;
   }
-  
+
   for (const block of blocks) {
     const patches = dmp.patch_make(block.search, block.replace);
     const [appliedText, results] = dmp.patch_apply(patches, newContent);
     if (results.some(r => r)) {
       const diffs = dmp.diff_main(newContent, appliedText);
       dmp.diff_cleanupSemantic(diffs);
-      
+
       let currentIndex = 0;
       for (const [type, text] of diffs) {
         if (type === 0) { // Equal
           currentIndex += text.length;
-        } else if (type === 1) { // Insert
+        }
+        else if (type === 1) { // Insert
           ranges.push({ start: currentIndex, end: currentIndex + text.length });
           currentIndex += text.length;
         }
       }
       newContent = appliedText;
-    } else {
+    }
+    else {
       console.warn('Failed to apply block:', block.search);
     }
   }
@@ -124,7 +123,8 @@ const formatToolCall = (toolCall: OpenAI.Chat.Completions.ChatCompletionMessageT
       return content.length > 150 ? content.substring(0, 150) + '...' : content;
     }
     return JSON.stringify(args);
-  } catch {
+  }
+  catch {
     return toolCall.function.arguments;
   }
 };
@@ -132,30 +132,30 @@ const formatToolCall = (toolCall: OpenAI.Chat.Completions.ChatCompletionMessageT
 const sendMessage = async () => {
   if (!chatInput.value.trim() || isSending.value) return;
 
-  emit('update:diffHighlights', []);
+  diffHighlights.value = [];
 
-  if (!props.settings.apiKey) {
+  if (!settings.apiKey) {
     alert(t.value.noKeyWarning);
     emit('openSettings');
     return;
   }
 
   let sysMsg = 'You are a helpful Markdown editor assistant. You help the user write, edit, and improve their markdown content. The markdown has the following content,\n';
-  sysMsg += `\n\nFull Content:\n<BEGIN_FILES>\n${props.markdownContent}\n<END_FILES>`;
-  if (props.selectedText) {
-    sysMsg += `\n\nResponse based on user selected part:\n\`\`\`\n${props.selectedText}\n\`\`\``;
+  sysMsg += `\n\nFull Content:\n<BEGIN_FILES>\n${markdownContent.value}\n<END_FILES>`;
+  if (selectedText.value) {
+    sysMsg += `\n\nResponse based on user selected part:\n\`\`\`\n${selectedText.value}\n\`\`\``;
   }
 
   chatMessages.value.push({ role: 'user', content: chatInput.value });
   chatInput.value = '';
   await scrollToBottom();
-  
+
   isSending.value = true;
 
   try {
     const openai = new OpenAI({
-      baseURL: props.settings.apiUrl,
-      apiKey: props.settings.apiKey,
+      baseURL: settings.apiUrl,
+      apiKey: settings.apiKey,
       dangerouslyAllowBrowser: true
     });
 
@@ -190,7 +190,7 @@ const sendMessage = async () => {
           name: m.name
         }) as OpenAI.Chat.Completions.ChatCompletionMessageParam)
       ],
-      model: props.settings.model,
+      model: settings.model,
       tools: tools as OpenAI.Chat.Completions.ChatCompletionTool[],
       tool_choice: 'auto'
     });
@@ -209,14 +209,15 @@ const sendMessage = async () => {
         if (toolCall.type === 'function') {
           if (toolCall.function.name === 'edit') {
             const args = JSON.parse(toolCall.function.arguments) as { diff: string };
-            const { content: newContent, ranges } = applyDiff(props.markdownContent, args.diff);
+            const { content: newContent, ranges } = applyDiff(markdownContent.value, args.diff);
 
             let resultMsg = '';
-            if (newContent !== props.markdownContent) {
-              emit('update:markdownContent', newContent);
-              emit('update:diffHighlights', ranges);
+            if (newContent !== markdownContent.value) {
+              markdownContent.value = newContent;
+              diffHighlights.value = ranges;
               resultMsg = t.value.successEdit;
-            } else {
+            }
+            else {
               resultMsg = t.value.failEdit;
             }
 
@@ -240,9 +241,9 @@ const sendMessage = async () => {
             tool_calls: m.tool_calls,
             tool_call_id: m.tool_call_id,
             name: m.name
-          }) as  OpenAI.Chat.Completions.ChatCompletionMessageParam)
+          }) as OpenAI.Chat.Completions.ChatCompletionMessageParam)
         ],
-        model: props.settings.model,
+        model: settings.model,
         tools: tools as OpenAI.Chat.Completions.ChatCompletionTool[]
       });
 
@@ -252,17 +253,21 @@ const sendMessage = async () => {
         await scrollToBottom();
       }
 
-    } else {
+    }
+    else {
       const reply = message.content ?? t.value.noResponse;
       chatMessages.value.push({ role: 'assistant', content: reply });
       await scrollToBottom();
     }
 
-  } catch (error) {
+  }
+  catch (error) {
     console.error(error);
-    chatMessages.value.push({ role: 'assistant', content: `${t.value.errorPrefix}${error.message}` });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    chatMessages.value.push({ role: 'assistant', content: `${t.value.errorPrefix}${errorMessage}` });
     await scrollToBottom();
-  } finally {
+  }
+  finally {
     isSending.value = false;
   }
 };
@@ -312,13 +317,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div 
+  <div
     v-if="show"
     class="fixed flex flex-col bg-gray-850 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden"
     :style="{ left: chatPosition.x + 'px', top: chatPosition.y + 'px', width: '360px', height: '600px' }"
   >
     <!-- Drag Handle Header -->
-    <div 
+    <div
       class="h-10 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-3 cursor-move select-none"
       @mousedown="startDrag"
     >
@@ -335,7 +340,7 @@ onUnmounted(() => {
         </button>
         <button
           class="text-gray-500 hover:text-gray-300 p-1"
-          @click="emit('update:show', false)"
+          @click="show = false"
         >
           <span class="material-icons text-sm">close</span>
         </button>
@@ -349,7 +354,7 @@ onUnmounted(() => {
     >
       <div
         v-for="(msg, idx) in chatMessages"
-        :key="idx" 
+        :key="idx"
         :class="['flex flex-col max-w-[90%]', msg.role === 'user' ? 'self-end items-end' : 'self-start items-start']"
       >
         <div
@@ -418,21 +423,21 @@ onUnmounted(() => {
         </div>
         <button
           class="text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
-          @click="emit('update:selectedText', '')"
+          @click="selectedText = ''"
         >
           <span class="material-icons text-xs">close</span>
         </button>
       </div>
 
       <div class="relative chat-input">
-        <textarea 
-          v-model="chatInput" 
+        <textarea
+          v-model="chatInput"
           :placeholder="t.placeholder"
           class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-sm text-white focus:border-purple-500 outline-none resize-none h-20"
           @keydown.ctrl.enter="sendMessage"
         />
-        <button 
-          :disabled="isSending || !chatInput.trim()" 
+        <button
+          :disabled="isSending || !chatInput.trim()"
           class="absolute bottom-2 right-2 p-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           @click="sendMessage"
         >

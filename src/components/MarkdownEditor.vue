@@ -3,25 +3,25 @@ import { ref, computed } from 'vue';
 import type { Lang, HighlightRange } from '@/types';
 import { I18N } from '@/constants/i18n';
 
-const props = defineProps<{
-  modelValue: string;
+const markdownContent = defineModel<string>();
+const { currentLang, diffHighlights = [] } = defineProps<{
   currentLang: Lang;
   diffHighlights?: HighlightRange[];
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void;
-  (e: 'selectionChange', text: string): void;
+  selectionChange: [text: string]
 }>();
 
-const t = computed(() => I18N[props.currentLang]);
+const t = computed(() => I18N[currentLang]);
 const editorRef = ref<HTMLTextAreaElement | null>(null);
 const lineNumbersRef = ref<HTMLDivElement | null>(null);
 const backdropRef = ref<HTMLDivElement | null>(null);
 const selectionRange = ref<HighlightRange | null>(null);
 
 const lineCount = computed(() => {
-  return props.modelValue.split('\n').length;
+  if (!markdownContent.value) return 1;
+  return markdownContent.value.split('\n').length;
 });
 
 const handleScroll = (e: Event) => {
@@ -38,12 +38,13 @@ const updateSelection = () => {
   if (!editorRef.value) return;
   const start = editorRef.value.selectionStart;
   const end = editorRef.value.selectionEnd;
-  
+
   selectionRange.value = { start, end };
-  
+
   if (start !== end) {
-    emit('selectionChange', props.modelValue.substring(start, end));
-  } else {
+    emit('selectionChange', markdownContent.value ? markdownContent.value.substring(start, end) : '');
+  }
+  else {
     emit('selectionChange', '');
   }
 };
@@ -58,56 +59,58 @@ const escapeHtml = (text: string) => {
 };
 
 const backdropHtml = computed(() => {
-  const text = props.modelValue;
-  const lines = text.split('\n');
-  const diffs = props.diffHighlights ?? [];
+  if (!markdownContent.value) return '';
+  const lines = markdownContent.value.split('\n');
+  const diffs = diffHighlights ?? [];
   const sel = selectionRange.value;
-  
+
   let currentPos = 0;
   let html = '';
-  
+
   lines.forEach((line, index) => {
     const len = line.length;
     const start = currentPos;
     const isLast = index === lines.length - 1;
     const end = start + len + (isLast ? 0 : 1);
-    
+
     let isDiff = false;
     if (diffs.length > 0) {
-       isDiff = diffs.some(h => {
-         if (h.start === h.end) {
-            if (isLast) return h.start >= start && h.start <= end;
-            return h.start >= start && h.start < end;
-         }
-         return Math.max(start, h.start) < Math.min(end, h.end);
-       });
+      isDiff = diffs.some(h => {
+        if (h.start === h.end) {
+          if (isLast) return h.start >= start && h.start <= end;
+          return h.start >= start && h.start < end;
+        }
+        return Math.max(start, h.start) < Math.min(end, h.end);
+      });
     }
-    
+
     let isSelected = false;
     if (sel) {
       if (sel.start === sel.end) {
         // Caret
         if (isLast) {
-           isSelected = sel.start >= start && sel.start <= end;
-        } else {
-           isSelected = sel.start >= start && sel.start < end;
+          isSelected = sel.start >= start && sel.start <= end;
         }
-      } else {
+        else {
+          isSelected = sel.start >= start && sel.start < end;
+        }
+      }
+      else {
         // Range
         isSelected = Math.max(start, sel.start) < Math.min(end, sel.end);
       }
     }
-    
+
     const classes = ['px-4', 'whitespace-pre-wrap', 'break-words'];
     if (isDiff) classes.push('bg-green-500/20');
     if (isSelected) classes.push('bg-blue-500/40');
-    
+
     const content = escapeHtml(line) || '<br>';
     html += `<div class="${classes.join(' ')}">${content}</div>`;
-    
+
     currentPos = end;
   });
-  
+
   return html;
 });
 </script>
@@ -143,11 +146,11 @@ const backdropHtml = computed(() => {
         <!-- Textarea -->
         <textarea
           ref="editorRef"
-          :value="modelValue"
+          :value="markdownContent"
           class="absolute inset-0 w-full h-full bg-transparent text-gray-200 outline-none resize-none font-mono text-sm leading-6"
           style="caret-color: white;"
           spellcheck="false"
-          @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+          @input="markdownContent = ($event.target as HTMLTextAreaElement).value"
           @scroll="handleScroll"
           @select="updateSelection"
           @keyup="updateSelection"
