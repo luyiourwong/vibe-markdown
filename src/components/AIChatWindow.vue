@@ -5,6 +5,10 @@ import DiffMatchPatch from 'diff-match-patch';
 import type { Message, Settings, Lang, HighlightRange } from '@/types';
 import { I18N } from '@/constants/i18n';
 
+// Constants for diff-match-patch configuration
+const DIFF_MATCH_DISTANCE = 100000; // Allow finding matches anywhere in the file (default: 1000)
+const DIFF_MATCH_THRESHOLD = 0.5; // Threshold for match quality (default: 0.5)
+
 const show = defineModel<boolean>('show');
 const selectedText = defineModel<string>('selectedText');
 const markdownContent = defineModel<string>('markdownContent');
@@ -44,8 +48,8 @@ const applyDiff = (original: string | undefined, diff: string): { content: strin
   const dmp = new DiffMatchPatch();
   // Increase Match_Distance to allow finding matches anywhere in the file
   // Default is 1000, which causes failures for content further down in the file
-  dmp.Match_Distance = 100000;
-  dmp.Match_Threshold = 0.5;
+  dmp.Match_Distance = DIFF_MATCH_DISTANCE;
+  dmp.Match_Threshold = DIFF_MATCH_THRESHOLD;
 
   let newContent = original ?? '';
   const ranges: HighlightRange[] = [];
