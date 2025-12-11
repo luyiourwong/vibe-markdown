@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import type { Lang, HighlightRange } from '@/types';
 import { I18N } from '@/constants/i18n';
+import DOMPurify from 'dompurify';
 
 const markdownContent = defineModel<string>();
 const { currentLang, diffHighlights = [] } = defineProps<{
@@ -111,7 +112,7 @@ const backdropHtml = computed(() => {
     currentPos = end;
   });
 
-  return html;
+  return DOMPurify.sanitize(html);
 });
 </script>
 
@@ -136,14 +137,13 @@ const backdropHtml = computed(() => {
       </div>
       <!-- Editor Container -->
       <div class="flex-1 relative">
-        <!-- Backdrop for Highlights -->
+        <!-- eslint-disable vue/no-v-html -- Content is sanitized with DOMPurify -->
         <div
           ref="backdropRef"
           class="absolute inset-0 font-mono text-sm leading-6 pointer-events-none text-transparent bg-gray-900 overflow-hidden"
           v-html="backdropHtml"
         />
-
-        <!-- Textarea -->
+        <!-- eslint-enable vue/no-v-html -->
         <textarea
           ref="editorRef"
           :value="markdownContent"
