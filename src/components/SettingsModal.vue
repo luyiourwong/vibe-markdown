@@ -3,21 +3,20 @@ import { ref, computed, watch } from 'vue';
 import type { Settings, Lang } from '@/types';
 import { I18N } from '@/constants/i18n';
 
-const props = defineProps<{
-  show: boolean;
+const show = defineModel<boolean>()
+const { settings, currentLang } = defineProps<{
   settings: Settings;
   currentLang: Lang;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:show', value: boolean): void;
-  (e: 'save', settings: Settings): void;
+  save: [settings: Settings]
 }>();
 
-const t = computed(() => I18N[props.currentLang]);
-const localSettings = ref<Settings>({ ...props.settings });
+const t = computed(() => I18N[currentLang]);
+const localSettings = ref<Settings>({ ...settings });
 
-watch(() => props.settings, (newSettings) => {
+watch(() => settings, (newSettings) => {
   localSettings.value = { ...newSettings };
 }, { deep: true });
 
@@ -35,7 +34,7 @@ const save = () => {
       <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
         <span class="material-icons text-gray-400">settings</span> {{ t.settingsTitle }}
       </h2>
-      
+
       <div class="space-y-4">
         <div>
           <label class="block text-xs text-gray-400 mb-1">{{ t.apiUrl }}</label>
@@ -67,7 +66,7 @@ const save = () => {
       <div class="flex justify-end gap-2 mt-6">
         <button
           class="px-4 py-2 rounded text-sm text-gray-300 hover:bg-gray-700 transition-colors"
-          @click="emit('update:show', false)"
+          @click="show = false"
         >
           {{ t.cancel }}
         </button>
