@@ -1,7 +1,9 @@
+import type { ChatCompletionMessageToolCall } from 'openai/resources/chat/completions';
+
 export interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string | null;
-  tool_calls?: any[];
+  tool_calls?: ChatCompletionMessageToolCall[];
   tool_call_id?: string;
   name?: string;
 }

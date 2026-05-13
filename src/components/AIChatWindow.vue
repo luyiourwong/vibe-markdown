@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import DiffMatchPatch from 'diff-match-patch';
 import type { Message, Settings, Lang, HighlightRange } from '@/types';
 import { I18N } from '@/constants/i18n';
+import type { ChatCompletionMessageToolCall } from "openai/resources/chat/completions";
 
 // Constants for diff-match-patch configuration
 const DIFF_MATCH_DISTANCE = 100000; // Allow finding matches anywhere in the file (default: 1000)
@@ -39,6 +40,12 @@ const truncatedSelection = computed(() => {
     ? selectedText.value.substring(0, 50) + '...'
     : selectedText.value;
 });
+
+const getFunctionToolCalls = (toolCalls: ChatCompletionMessageToolCall[]) =>
+  toolCalls.filter(
+    (t): t is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall =>
+      t.type === 'function'
+  );
 
 const clearChat = () => {
   chatMessages.value = [];
@@ -389,7 +396,7 @@ onUnmounted(() => {
               class="space-y-2 w-full"
             >
               <div
-                v-for="(tool, tIdx) in msg.tool_calls"
+                v-for="(tool, tIdx) in getFunctionToolCalls(msg.tool_calls)"
                 :key="tIdx"
                 class="text-xs"
               >
