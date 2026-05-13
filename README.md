@@ -59,6 +59,11 @@ npm run build
 
 The project includes tools for code quality and testing:
 
+- **Type Checking**:
+  ```shell
+    npm run typecheck
+    ```
+
 - **Linting**: Check for code style issues.
   ```sh
   npm run lint
@@ -69,3 +74,8 @@ The project includes tools for code quality and testing:
 - **Testing**: Run unit tests with Vitest.
   ```sh
   npm run test
+  ```
+
+## 🤖 AI-Assisted Development Guidelines
+This project fully supports Vibecoding.
+- Basic Guidelines: An AI development guide is provided in [AGENTS.md](AGENTS.md).
